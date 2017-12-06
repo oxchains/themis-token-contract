@@ -340,7 +340,7 @@ contract GETToken is PausableToken, MintableToken {
         decimals = tokenDecimals;                                   //set up amount of decimals for display purposes
         startTime = icoStartTime;                                   //set up startTime of ico
         deadline = icoLastingDate * 1 days + startTime;             //calculate deadline of ico
-        totalSupplyLimit = icoTotalSupplyLimit;                          //set up limit amount of tokens
+        totalSupplyLimit = icoTotalSupplyLimit;                     //set up limit amount of tokens
         tokensPerEther = icoTokensPerEther;                         //set up ratio tokens/ether
     }
 

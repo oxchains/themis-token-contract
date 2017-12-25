@@ -354,6 +354,10 @@ contract GETToken is PausableToken, MintableToken {
         sellTokens();
     }
 
+    /**
+     * @dev Sell tokens to msg.sender; the totalSupply tokens will be limited by totalSupplyLimit
+     *
+     */
     function sellTokens() payable whenNotPaused preSaleActive {
         require(msg.value > 0);
 
@@ -368,16 +372,28 @@ contract GETToken is PausableToken, MintableToken {
         SellTokens(msg.sender, tokens, amount, tokensPerEther);
     }
 
+    /**
+     * @dev mint tokens to someone(_to), this will not be limited by totalSupplyLimit
+     * @param _to the address tokens minted to
+     * @parma _amount the amount tokens minted to
+     */
     function mint(address _to, uint256 _amount) public onlyOwner canMint preSaleActive whenNotPaused returns (bool) {
         return super.mint(_to, _amount);
     }
 
+    /**
+     * @dev check ico is active or not
+     */
     modifier preSaleActive() {
         require(now >= startTime);
         require(now < deadline);
         _;
     }
 
+    /**
+     * @dev calculate tokens should be send to buyer by rate which is setted when deploying
+     * @param amount eth send by buyer
+     */
     function calculateTokenAmount(uint256 amount) constant returns(uint256) {
         return amount.mul(tokensPerEther);
     }

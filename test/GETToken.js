@@ -1,5 +1,4 @@
 const GETToken = artifacts.require("GETToken");
-const assertJump = require("zeppelin-solidity/test/helpers/assertJump.js");
 
 const tokenName = "GETToken";
 const tokenSymbol = "GET";
@@ -67,7 +66,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.pause({from: accounts[1]});
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should throw before");
@@ -77,7 +76,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.unpause({from: accounts[1]});
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should return before");
@@ -108,7 +107,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.mint(accounts[2], 10 * 10 ** 18, {from: accounts[1]});
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should return before");
@@ -121,7 +120,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.mint(accounts[1], 10 * 10 ** 18);
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should return before");
@@ -163,7 +162,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.transferFrom(accounts[0], accounts[1], sendEther * 10 ** 18);
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should return before");
@@ -176,7 +175,7 @@ contract("GETToken ico", function(accounts) {
         try {
             await this.GetTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
         } catch (error) {
-            return assertJump(error);
+            return;
         }
 
         assert.fail("should return before");

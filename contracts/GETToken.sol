@@ -320,8 +320,7 @@ contract GETToken is PausableToken, MintableToken {
 
     uint256 public totalSupply = 0;
 
-    event SellTokens(address recipient, uint sellTokens, uint payEther, uint ratio);
-    //event Init();
+    event SellTokens(address indexed recipient, uint sellTokens, uint payEther, uint ratio);
 
     /**
      * Set up the initialization parameter
@@ -369,7 +368,7 @@ contract GETToken is PausableToken, MintableToken {
         SellTokens(msg.sender, tokens, amount, tokensPerEther);
     }
 
-    function mint(address _to, uint256 _amount) public onlyOwner canMint preSaleActive returns (bool) {
+    function mint(address _to, uint256 _amount) public onlyOwner canMint preSaleActive whenNotPaused returns (bool) {
         return super.mint(_to, _amount);
     }
 

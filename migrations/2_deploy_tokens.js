@@ -9,7 +9,7 @@ const duration = {
     years: function (val) { return val * this.days(365); },
 };
 
-module.exports = (deployer) => {
+module.exports = (deployer, network, accounts) => {
   const tokenName = "IDCToken";
   const tokenSymbol = "IDC";
   const decimalUints = 18;
@@ -21,5 +21,6 @@ module.exports = (deployer) => {
   const tokenSelledCap = 3.6 * 10000 * 10000 * 10 ** 18;
   // USD of one eth
   const ethPrice = 718;
-  deployer.deploy(IDCToken, tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, moneyCap, tokenSelledCap, ethPrice)
+  const wallet = accounts[0];
+  deployer.deploy(IDCToken, tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, moneyCap, tokenSelledCap, ethPrice, wallet)
 }

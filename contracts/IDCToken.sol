@@ -1,5 +1,7 @@
 pragma solidity ^0.4.18;
 
+// Based on https://github.com/OpenZeppelin/zeppelin-solidity
+
 /**
  * @title SafeMath
  * @dev Math operations with safety checks that throw on error
@@ -416,6 +418,9 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
     // will get init tokens when create contract
     address public creator;
 
+    // address where funds are collected
+    address public wallet;
+
     event SellTokens(address indexed recipient, uint sellTokens, uint payEther, uint ratio);
 
     /**
@@ -431,7 +436,8 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         uint256   _rate,
         uint256   _moneyRaisedCap,
         uint256   _tokenSelledCap,
-        uint256   _ethPrice
+        uint256   _ethPrice,
+        address   _wallet
     ) public {
 
         // simple check
@@ -440,6 +446,7 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         require(_totalSupply > 0);
         require(_moneyRaisedCap > 0);
         require(_tokenSelledCap > 0);
+        require(_wallet != address(0));
 
         name = _tokenName;
         symbol = _tokenSymbol;
@@ -451,9 +458,11 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         moneyRaisedCap = _moneyRaisedCap;
         tokenSelledCap = _tokenSelledCap;
         ethPrice = _ethPrice;
+        wallet = _wallet;
 
         // give all init tokens to creator
         balances[msg.sender] = totalSupply;
+        creator = msg.sender;
     }
 
     function setEthPrice(uint256 _ethPrice) public onlyOwner {
@@ -487,12 +496,26 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         require(tokenSelled.add(tokens) <= tokenSelledCap);
         require(weiRaised.add(amount).mul(ethPrice) <= moneyRaisedCap);
 
-        tokenSelled.add(tokens);
-        weiRaised.add(amount);
+        tokenSelled = tokenSelled.add(tokens);
+        weiRaised = weiRaised.add(amount);
 
         // send tokens to buyer
-        transferFrom(creator, msg.sender, tokens);
+        // creator has all initSupply tokens
+        // no need to check address
+        require(tokens <= balances[creator]);
+        balances[creator] = balances[creator].sub(tokens);
+        balances[msg.sender] = balances[msg.sender].add(tokens);
+
+        Transfer(creator, msg.sender, tokens);
         SellTokens(msg.sender, tokens, amount, rate);
+
+        forwardFunds();
+    }
+
+    // send ether to the fund collection wallet
+    // override to create custom fund forwarding mechanisms
+    function forwardFunds() internal {
+        wallet.transfer(msg.value);
     }
 
     /**

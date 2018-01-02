@@ -38,14 +38,14 @@ truffle deploy
 * can not buy tokens when ico is over
 * change owner of contract by owner
 * normal transfer/approve/transferFrom function
-* will not sell tokens when goal of money raised or token selled reached
+* will not sell tokens to user not in white list or amount of tokens of user in white list reach cap
 * wallet(be setted in initialize) can receive eth rightly
 
 ## process of contract
 
 1. creator deploy contract(will set all initAmount tokens to creator's wallet)
 2. buyer send eth to address of contract, then will receive IDC tokens automatic
-3. ico will over(not sell tokens) when goal reached(money raised or token selled) or ico time passed by
+3. ico will over(not sell tokens) when ico time passed by
 
 * all transaction will be paused when in emergency
 

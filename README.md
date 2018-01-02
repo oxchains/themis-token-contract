@@ -4,8 +4,7 @@ Themis Token Contract
 ## Local test
 <pre><code>
 # start ganache-cli client(simple)
-# to reach goal of raised money or selled tokens, you have to set your acount enough ether
-ganache-cli --account="0x1024102410241024102410241024102410241024102410241024102410241024,100000000000000000000000000" --account="0x10241024102410241024102410241024102410241410241024102410241023,100000000000000000000000000" --account="0x1024102410241024102410241024102410241024102410241024102410241022,100000000000000000000000000" --account="0x1024102410241024102410241024102410241024102410241024102410241021,100000000000000000000000000" --account="0x1024102410241024102410241024102410241024102410241024102410241020,100000000000000000000000000"
+ganache-cli
  
 # install node package 
 npm install
@@ -24,7 +23,7 @@ truffle deploy
 ## Function of contract
 * can be paused in some emergency situation
 * can mint tokens to someone directly
-* can sell tokens to someone automatic
+* can sell tokens to someone in white list automatic
 * can change the owner of contract
 * will not sell tokens when goal reached
 * will not sell tokens when ico over
@@ -33,7 +32,7 @@ truffle deploy
 * initialize of contract
 * pause/unpause contract by owner in emergency
 * can not pause/unpause contract by someone which is not owner
-* sell tokens automatic
+* sell tokens to user in white list automatic
 * mint tokens to someone directly by owner
 * finish minting of ico
 * can not buy tokens when ico is over

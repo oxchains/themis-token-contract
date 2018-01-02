@@ -72,10 +72,8 @@ const decimalAmount = new BigNumber(10 ** 18);
 
 const totalSupply = new BigNumber(8 * 10000 * 10000).mul(decimalAmount);
 const rate = new BigNumber(7000);
-const moneyCap = new BigNumber(2400 * 10000).mul(decimalAmount);
-const tokenSelledCap = new BigNumber(3.6 * 10000 * 10000).mul(decimalAmount);
-// USD of one eth
-const ethPrice = 718;
+const capPerAddress = new BigNumber(10).mul(decimalAmount);
+
 startTime = latestTime() + duration.weeks(1);
 afterStartTime = startTime + duration.seconds(10);
 endTime = startTime + duration.weeks(3);
@@ -94,7 +92,7 @@ contract("IDCToken ico", function(accounts) {
         endTime = startTime + duration.weeks(3);
         afterEndTime = endTime + duration.seconds(10);
 
-        this.IDCTokenSale = await IDCToken.new(tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, moneyCap, tokenSelledCap, ethPrice, accounts[0]);
+        this.IDCTokenSale = await IDCToken.new(tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, capPerAddress, accounts[0]);
     });
 
     it("should right initialized", async function () {
@@ -119,14 +117,8 @@ contract("IDCToken ico", function(accounts) {
         let acutalRate = await this.IDCTokenSale.rate();
         assertEquals(acutalRate, rate, "wrong rate");
 
-        let actualMoneyRaisedCap = await this.IDCTokenSale.moneyRaisedCap();
-        assertEquals(actualMoneyRaisedCap, moneyCap, "wrong moneyRaisedCap");
-
-        let actualTokenSelledCap = await this.IDCTokenSale.tokenSelledCap();
-        assertEquals(actualTokenSelledCap, tokenSelledCap, "wrong TokenSelledCap");
-
-        let actualEthPrice = await this.IDCTokenSale.ethPrice();
-        assertEquals(actualEthPrice, ethPrice, "wrong ethPrice");
+        let actualCapPerAddress = await this.IDCTokenSale.capPerAddress();
+        assertEquals(actualCapPerAddress, capPerAddress, "wrong cap of per address in white list");
 
         let acutalWallet = await this.IDCTokenSale.wallet();
         assert.equal(acutalWallet, accounts[0], "wrong wallet");
@@ -210,16 +202,10 @@ contract("IDCToken ico", function(accounts) {
         assert.fail("should return before");
     });
 
-    it("should right set ethPrice", async function () {
-        let newEthPrice = new BigNumber(2000);
-        await this.IDCTokenSale.setEthPrice(newEthPrice);
-        let actualPrice = await this.IDCTokenSale.ethPrice();
-        assertEquals(newEthPrice, actualPrice, "wrong ethPrice");
-    });
-
-    it("should send tokens to purchaser and sent eth to collect walllet", async function() {
+    it("should send tokens to purchaser in white list and sent eth(less than 10) to collect walllet", async function() {
 
         await increaseTimeTo(afterStartTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
 
         let sendEther = 1;
         const wallet = accounts[0];
@@ -237,12 +223,39 @@ contract("IDCToken ico", function(accounts) {
 
     });
 
+    it("should not allow to purchase tokens when user not in white list", async function () {
+        await increaseTimeTo(afterStartTime);
+
+        let sendEther = 1;
+        try {
+            await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
+        } catch (error) {
+            return;
+        }
+
+        assert.fail("should return before");
+    });
+
+    it("should not allow to purchase tokens when amount of eth of tokens bigger than capPerAddress(10)", async function() {
+        await increaseTimeTo(afterStartTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
+
+        let sendEther = 10.1;
+        try {
+            await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
+        } catch (error) {
+            return;
+        }
+
+        assert.fail("should return before");
+    });
+
     it("should normal transfer tokens from account 0 to 1", async function () {
 
         await increaseTimeTo(afterStartTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
 
         let sendEther = 10;
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[0]});
         await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
         await this.IDCTokenSale.transfer(accounts[1], sendEther * rate * 10 ** 18, {from: accounts[0]});
 
@@ -281,7 +294,6 @@ contract("IDCToken ico", function(accounts) {
         await increaseTimeTo(afterStartTime);
 
         let sendEther = 10;
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[0]});
         try {
             await this.IDCTokenSale.transferFrom(accounts[0], accounts[1], sendEther * 10 ** 18);
         } catch (error) {
@@ -317,48 +329,11 @@ contract("IDCToken ico", function(accounts) {
         assert.fail("should return before");
     });
 
-    it("should be caped when selledTokens reach goal", async function () {
-
-        await increaseTimeTo(afterStartTime);
-
-        // set low ethPrice to reach sell tokens goal before reach money goal
-        const newEthPrice = 1;
-        await this.IDCTokenSale.setEthPrice(newEthPrice);
-        // the biggest amount of eth can be raised
-        let sendEther = 51428;
-
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[0]});
-
-        try {
-            await this.IDCTokenSale.sendTransaction({value: web3.toWei(1, "ether"), from: accounts[1]});
-        } catch (error) {
-            return;
-        }
-
-        assert.fail("should return before");
-    });
-
-    it("should be caped when moneyRaised reach goal", async function () {
-        await increaseTimeTo(afterStartTime);
-        let newEthPrice = new BigNumber(2400);
-        let sendEther = 10000;
-
-        await this.IDCTokenSale.setEthPrice(newEthPrice);
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
-
-        try {
-            await this.IDCTokenSale.sendTransaction({value: web3.toWei(1, "ether"), from: accounts[1]});
-        } catch (error) {
-            return;
-        }
-
-        assert.fail("should return before");
-    });
-
     it("one can burn his/her tokens", async function () {
         await increaseTimeTo(afterStartTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
 
-        let sendEther = 20;
+        let sendEther = 10;
         await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
 
         let pre = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();

@@ -18,6 +18,11 @@ module.exports = {
       network_id: "*",
       port: 8545,
       host: "localhost",
+    },
+    privateNet: {
+      network_id: "10",
+      port: 40404,
+      host: "localhost",
     }
   }
 }

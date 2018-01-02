@@ -399,20 +399,11 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
     // how many token units a buyer gets per wei
     uint256 public rate;
 
-    // amount of raised money in wei
+    // amount of raised eth in wei
     uint256 public weiRaised;
 
     // amount of token selled
     uint256 public tokenSelled;
-
-    // cap of money raised
-    uint256 public moneyRaisedCap;
-
-    // cap of token selled
-    uint256 public tokenSelledCap;
-
-    // price of eth(set once a day)
-    uint256 public ethPrice;
 
     // creator of contract
     // will get init tokens when create contract
@@ -420,6 +411,12 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
 
     // address where funds are collected
     address public wallet;
+
+    // whiteList of user who can buy tokens
+    mapping(address => address) whiteList;
+
+    // cap of tokens per address
+    uint256 public capPerAddress;
 
     event SellTokens(address indexed recipient, uint sellTokens, uint payEther, uint ratio);
 
@@ -434,9 +431,7 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         uint256   _endTime,
         uint256   _totalSupply,
         uint256   _rate,
-        uint256   _moneyRaisedCap,
-        uint256   _tokenSelledCap,
-        uint256   _ethPrice,
+        uint256   _capPerAddress,
         address   _wallet
     ) public {
 
@@ -444,8 +439,7 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         require(_endTime >= _startTime);
         require(_startTime >= now);
         require(_totalSupply > 0);
-        require(_moneyRaisedCap > 0);
-        require(_tokenSelledCap > 0);
+        require(_capPerAddress > 0);
         require(_wallet != address(0));
 
         name = _tokenName;
@@ -455,9 +449,7 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         endTime = _endTime;
         totalSupply = _totalSupply;
         rate = _rate;
-        moneyRaisedCap = _moneyRaisedCap;
-        tokenSelledCap = _tokenSelledCap;
-        ethPrice = _ethPrice;
+        capPerAddress = _capPerAddress;
         wallet = _wallet;
 
         // give all init tokens to creator
@@ -465,10 +457,21 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         creator = msg.sender;
     }
 
-    function setEthPrice(uint256 _ethPrice) public onlyOwner {
-        require(_ethPrice != 0);
+    /**
+     * @dev add user to whilteList(only people in whileList can buy tokens)
+     */
+    function addWhiteList(address user) public onlyOwner {
+        require(user != address(0));
 
-        ethPrice = _ethPrice;
+        // no need to check exist of user(will cover if exist)
+        whiteList[user] = user;
+    }
+
+    /**
+     * @dev check exist of user in whiteList
+     */
+    function checkExist(address user) internal view returns(bool) {
+        return(whiteList[user] == user);
     }
 
     /**
@@ -487,22 +490,25 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
      *
      */
     function sellTokens() public payable whenNotPaused preSaleActive {
+
         require(msg.value > 0);
+        // check user in whiteList or not
+        require(checkExist(msg.sender) == true);
 
         uint256 amount = msg.value;
         uint256 tokens =  calculateTokenAmount(amount);
 
-        // check the goal of ico
-        require(tokenSelled.add(tokens) <= tokenSelledCap);
-        require(weiRaised.add(amount).mul(ethPrice) <= moneyRaisedCap);
-
         tokenSelled = tokenSelled.add(tokens);
         weiRaised = weiRaised.add(amount);
+
+        // check the cap of per user in whiteList
+        require(balances[msg.sender].add(tokens) <= calculateTokenAmount(capPerAddress));
+        // check there are tokens for sale;
+        require(tokens <= balances[creator]);
 
         // send tokens to buyer
         // creator has all initSupply tokens
         // no need to check address
-        require(tokens <= balances[creator]);
         balances[creator] = balances[creator].sub(tokens);
         balances[msg.sender] = balances[msg.sender].add(tokens);
 

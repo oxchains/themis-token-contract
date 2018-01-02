@@ -415,6 +415,9 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
     // whiteList of user who can buy tokens
     mapping(address => address) whiteList;
 
+    // record of amount of tokens selled to user in white list
+    mapping(address => uint256) tokensBuyed;
+
     // cap of tokens per address
     uint256 public capPerAddress;
 
@@ -501,10 +504,15 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         tokenSelled = tokenSelled.add(tokens);
         weiRaised = weiRaised.add(amount);
 
+        // TODO how to check if msg.sender send tokens to others when get tokens
         // check the cap of per user in whiteList
-        require(balances[msg.sender].add(tokens) <= calculateTokenAmount(capPerAddress));
+        require(tokensBuyed[msg.sender].add(tokens) <= calculateTokenAmount(capPerAddress));
         // check there are tokens for sale;
         require(tokens <= balances[creator]);
+
+        // record of tokens selled to buyer
+        // in case to user transfer IDC tokens to others, then buy tokens again
+        tokensBuyed[msg.sender] = tokensBuyed[msg.sender].add(tokens);
 
         // send tokens to buyer
         // creator has all initSupply tokens

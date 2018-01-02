@@ -144,17 +144,22 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should throw before");
+        // for private network
+        const actualState = await this.IDCTokenSale.paused();
+        assert.equal(actualState, false, "contract can not be paused by not owner");
     });
 
     it("should not allow to unpause by not owner", async function() {
+        await this.IDCTokenSale.pause();
         try {
             await this.IDCTokenSale.unpause({from: accounts[1]});
         } catch (error) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        const actualState = await this.IDCTokenSale.paused();
+        assert.equal(actualState, true, "contract can not be unpause by not owner");
     });
 
     it("should allow to change ownership by owner", async function () {
@@ -181,12 +186,14 @@ contract("IDCToken ico", function(accounts) {
 
     it("should not allow to mint by not owner(can mint)", async function () {
         try {
-            await this.IDCTokenSale.mint(accounts[2], 10 * 10 ** 18, {from: accounts[1]});
+            await this.IDCTokenSale.mint(accounts[1], 10 * 10 ** 18, {from: accounts[1]});
         } catch (error) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(0), "can not mint by not owner");
     });
 
     it("should not allow to mint by anyone(when finish mint)", async function () {
@@ -199,7 +206,9 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(0), "can not mint by anyone when finish minting");
     });
 
     it("should send tokens to purchaser in white list and sent eth(less than 10) to collect walllet", async function() {
@@ -213,9 +222,11 @@ contract("IDCToken ico", function(accounts) {
 
         await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
 
-        let tokenBalance = await this.IDCTokenSale.balanceOf(accounts[1]);
+        let tokenBalance = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
         let sellTokens = new BigNumber(sendEther * rate * 10 ** 18);
-        assertEquals(new BigNumber(tokenBalance.valueOf()), sellTokens, "send wrong amount tokens to buyer");
+        console.log(tokenBalance);
+        console.log(sellTokens);
+        assertEquals(tokenBalance, sellTokens, "send wrong amount tokens to buyer");
 
         // check wallet will right receive ether
         const post = web3.eth.getBalance(wallet);
@@ -233,7 +244,9 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(0), "can not purchase tokens when user not in white list");
     });
 
     it("should not allow to purchase tokens when amount of eth of tokens bigger than capPerAddress(10)", async function() {
@@ -247,7 +260,31 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(0), "user can not buy tokens when tokens of user want to buy bigger than cap limit");
+    });
+    
+    it("should not allow to purchase tokens when user have buy tokens greater than cap per address(in case send idc to others, then buy tokens again)", async function () {
+        await increaseTimeTo(afterStartTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
+
+        let sendEther = 10;
+        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
+
+        let transferEth = 2;
+        await this.IDCTokenSale.transfer(accounts[2], transferEth * rate * 10 ** 18, {from: accounts[1]});
+
+        let afSendEther = 0.1;
+        try {
+            await this.IDCTokenSale.sendTransaction({value: web3.toWei(afSendEther, "ether"), from: accounts[1]});
+        } catch (error) {
+            return;
+        }
+
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(8 * rate * 10 ** 18), "user can not buy more tokens when tokens of user has buyed equal with cap limit");
     });
 
     it("should normal transfer tokens from account 0 to 1", async function () {
@@ -260,6 +297,8 @@ contract("IDCToken ico", function(accounts) {
         await this.IDCTokenSale.transfer(accounts[1], sendEther * rate * 10 ** 18, {from: accounts[0]});
 
         let tokens = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        console.log(tokens);
+        console.log(new BigNumber(20 * rate *  10 ** 18));
         assertEquals(tokens, new BigNumber(20 * rate *  10 ** 18), "transfer token wrong");
     });
 
@@ -292,19 +331,23 @@ contract("IDCToken ico", function(accounts) {
     it("should not allow to transfer from account 0 to 1(when not approve)", async function () {
 
         await increaseTimeTo(afterStartTime);
+        let pre = await this.IDCTokenSale.balanceOf(accounts[0]).valueOf();
 
         let sendEther = 10;
         try {
-            await this.IDCTokenSale.transferFrom(accounts[0], accounts[1], sendEther * 10 ** 18);
+            await this.IDCTokenSale.transferFrom(accounts[0], accounts[1], sendEther * rate * 10 ** 18);
         } catch (error) {
             return;
         }
 
-        assert.fail("should return before");
+        let after = await this.IDCTokenSale.balanceOf(accounts[0]).valueOf();
+        assertEquals(pre, after, "amount of account 0 should equal");
     });
 
     it("should not allow to purchase tokens when ico not start", async function () {
         let sendEther = 10;
+
+        let pre = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
 
         try {
             await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
@@ -312,13 +355,15 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should return before");
+        let after = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(pre, after, "amount of account 1 should equal");
     });
 
     it("should not allow to purchase tokens when ico is over", async function () {
         let sendEther = 10;
 
         await increaseTimeTo(afterEndTime);
+        await this.IDCTokenSale.addWhiteList(accounts[1]);
 
         try {
             await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
@@ -326,7 +371,9 @@ contract("IDCToken ico", function(accounts) {
             return;
         }
 
-        assert.fail("should return before");
+        // for private network
+        let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        assertEquals(tokensOfMint, new BigNumber(0), "user can not buy more tokens when tokens of user has buyed equal with cap limit");
     });
 
     it("one can burn his/her tokens", async function () {
@@ -348,6 +395,10 @@ contract("IDCToken ico", function(accounts) {
         let actualBurnAmount = new BigNumber(pre).sub(new BigNumber(after));
         let acutalBurnTotal = preTotal.sub(afterTotal);
 
+        console.log(burnAmount);
+        console.log(actualBurnAmount);
+        console.log(acutalBurnTotal);
+        console.log(burnAmount);
         assertEquals(burnAmount, actualBurnAmount, "burn amount not equals");
         assertEquals(burnAmount, acutalBurnTotal, "burn amount not equals");
     });

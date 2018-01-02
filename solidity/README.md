@@ -1,7 +1,7 @@
 # themis-token-contract
 Themis Token Contract
 
-## Local test
+## Test on test network
 <pre><code>
 # start ganache-cli client(simple)
 ganache-cli
@@ -14,6 +14,19 @@ truffle test
 
 # deploy contract
 truffle deploy
+</code></pre>
+
+## Test on private network
+<pre><code>
+# use geth to start private network
+
+
+# unlock accounts
+
+
+# start test
+
+
 </code></pre>
 
 ## How to get tokens

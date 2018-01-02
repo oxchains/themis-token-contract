@@ -13,11 +13,11 @@ module.exports = (deployer, network, accounts) => {
   const tokenName = "IDCToken";
   const tokenSymbol = "IDC";
   const decimalUints = 18;
-  const startTime = web3.eth.getBlock("latest").timestamp;
+  const startTime = web3.eth.getBlock("latest").timestamp + 10 * 60;
   const endTime = startTime + duration.weeks(3);
   const totalSupply = 8 * 10000 * 10000 * 10 ** 18;
   const rate = 7000;
   const capPerAddress = 10 * 10 ** 18;
   const wallet = accounts[0];
-  deployer.deploy(IDCToken, tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, capPerAddress, wallet)
+  deployer.deploy(IDCToken, tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, capPerAddress, wallet);
 };

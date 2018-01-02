@@ -23,6 +23,7 @@ module.exports = {
       network_id: "10",
       port: 40404,
       host: "localhost",
+      gasLimit: 4700000000,
     }
   }
 }

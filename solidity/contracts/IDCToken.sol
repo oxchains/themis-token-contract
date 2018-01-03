@@ -473,7 +473,7 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
     /**
      * @dev check exist of user in whiteList
      */
-    function checkExist(address user) internal view returns(bool) {
+    function checkExist(address user) public view returns(bool) {
         return(whiteList[user] == user);
     }
 
@@ -504,7 +504,6 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         tokenSelled = tokenSelled.add(tokens);
         weiRaised = weiRaised.add(amount);
 
-        // TODO how to check if msg.sender send tokens to others when get tokens
         // check the cap of per user in whiteList
         require(tokensBuyed[msg.sender].add(tokens) <= calculateTokenAmount(capPerAddress));
         // check there are tokens for sale;
@@ -539,6 +538,13 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         require(now >= startTime);
         require(now <= endTime);
         _;
+    }
+
+    /**
+     * @dev return now time
+     */
+    function timeNow() public view returns(uint256) {
+        return now;
     }
 
     /**

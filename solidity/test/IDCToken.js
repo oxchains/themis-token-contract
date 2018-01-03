@@ -65,7 +65,7 @@ function assertEquals(a, b, msg) {
 
 const BigNumber = web3.BigNumber;
 
-const tokenName = "IDCToken";
+const tokenName = "IDC Token";
 const tokenSymbol = "IDC";
 const decimalUints = 18;
 const decimalAmount = new BigNumber(10 ** 18);
@@ -224,8 +224,7 @@ contract("IDCToken ico", function(accounts) {
 
         let tokenBalance = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
         let sellTokens = new BigNumber(sendEther * rate * 10 ** 18);
-        console.log(tokenBalance);
-        console.log(sellTokens);
+
         assertEquals(tokenBalance, sellTokens, "send wrong amount tokens to buyer");
 
         // check wallet will right receive ether
@@ -290,16 +289,12 @@ contract("IDCToken ico", function(accounts) {
     it("should normal transfer tokens from account 0 to 1", async function () {
 
         await increaseTimeTo(afterStartTime);
-        await this.IDCTokenSale.addWhiteList(accounts[1]);
 
         let sendEther = 10;
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
         await this.IDCTokenSale.transfer(accounts[1], sendEther * rate * 10 ** 18, {from: accounts[0]});
 
         let tokens = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
-        console.log(tokens);
-        console.log(new BigNumber(20 * rate *  10 ** 18));
-        assertEquals(tokens, new BigNumber(20 * rate *  10 ** 18), "transfer token wrong");
+        assertEquals(tokens, new BigNumber(sendEther * rate *  10 ** 18), "transfer token wrong");
     });
 
     it("should allow to transfer from account 0 to 1(when approve)", async function() {
@@ -380,25 +375,18 @@ contract("IDCToken ico", function(accounts) {
         await increaseTimeTo(afterStartTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
 
-        let sendEther = 10;
-        await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
-
-        let pre = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        let pre = await this.IDCTokenSale.balanceOf(accounts[0]).valueOf();
         let preTotal = await this.IDCTokenSale.totalSupply();
 
         let burnAmount = decimalAmount.mul(1000);
-        await this.IDCTokenSale.burn(burnAmount, {from: accounts[1]});
+        await this.IDCTokenSale.burn(burnAmount, {from: accounts[0]});
 
-        let after = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
+        let after = await this.IDCTokenSale.balanceOf(accounts[0]).valueOf();
         let afterTotal = await this.IDCTokenSale.totalSupply();
 
         let actualBurnAmount = new BigNumber(pre).sub(new BigNumber(after));
         let acutalBurnTotal = preTotal.sub(afterTotal);
 
-        console.log(burnAmount);
-        console.log(actualBurnAmount);
-        console.log(acutalBurnTotal);
-        console.log(burnAmount);
         assertEquals(burnAmount, actualBurnAmount, "burn amount not equals");
         assertEquals(burnAmount, acutalBurnTotal, "burn amount not equals");
     });

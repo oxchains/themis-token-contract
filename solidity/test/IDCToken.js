@@ -43,6 +43,8 @@ const duration = {
 };
 
 function latestTime () {
+    // var timestamp = (new Date()).valueOf();
+    // return timestamp / 1000;
     return web3.eth.getBlock('latest').timestamp;
 }
 
@@ -74,7 +76,7 @@ const totalSupply = new BigNumber(8 * 10000 * 10000).mul(decimalAmount);
 const rate = new BigNumber(7000);
 const capPerAddress = new BigNumber(10).mul(decimalAmount);
 
-startTime = latestTime() + duration.weeks(1);
+startTime = latestTime() + duration.seconds(60);
 afterStartTime = startTime + duration.seconds(10);
 endTime = startTime + duration.weeks(3);
 afterEndTime = endTime + duration.seconds(10);
@@ -215,6 +217,13 @@ contract("IDCToken ico", function(accounts) {
 
         await increaseTimeTo(afterStartTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
+
+        let timeNow = await this.IDCTokenSale.timeNow();
+        console.log(timeNow);
+        console.log(startTime);
+        while (timeNow <= startTime) {
+            timeNow = await this.IDCTokenSale.timeNow();
+        }
 
         let sendEther = 1;
         const wallet = accounts[0];

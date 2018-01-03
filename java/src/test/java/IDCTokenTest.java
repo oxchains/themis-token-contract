@@ -9,6 +9,7 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
+import javax.swing.plaf.synth.SynthTextAreaUI;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +74,7 @@ public class IDCTokenTest {
 
     public IDCToken before(Credentials credentials) throws Exception {
         //String url = "http://localhost:40404";
-        String url = "";
+        String url = "http://192.168.1.115:8545";
         Web3j web3j = GetConnection(url);
         String contractAddress =  DeployContract(web3j, credentials);
         IDCToken idc = IDCToken.load(contractAddress, web3j, credentials, gasPrice, gasLimit);
@@ -183,41 +184,52 @@ public class IDCTokenTest {
     @Test
     public void TestNormalSellToken() throws Exception {
 
-        Web3j web3j = GetConnection("");
+        Web3j web3j = GetConnection("http://192.168.1.115:8545/");
 
         Credentials credentials = GetDefaultCredentials();
         IDCToken idc = before(credentials);
 
-        // increase time to start time
+
         BigInteger timeNow = idc.timeNow().send();
+        BigInteger actualStartTime = idc.startTime().send();
+        BigInteger actualEndTime = idc.endTime().send();
+        System.out.println("now is :           " + timeNow);
+        System.out.println("ico start time is :" + actualStartTime);
+        System.out.println("ico end time is :  " + actualEndTime);
+        // increase time to start time
+        timeNow = idc.timeNow().send();
         while (timeNow.compareTo(startTime) == -1) {
             timeNow = idc.timeNow().send();
         }
 
+        System.out.println("now is:" + timeNow);
+
         Credentials account1 = GetAccount1();
 
-        boolean inWhiteList = idc.checkExist(account1.getAddress()).send();
-        System.out.println(inWhiteList);
         // add account1 to white list
         idc.addWhiteList(account1.getAddress()).send();
-        inWhiteList = idc.checkExist(account1.getAddress()).send();
-        System.out.println(inWhiteList);
+        System.out.println(credentials.getAddress());
+        System.out.println(account1.getAddress());
+
+        boolean inWhiteList = idc.checkExist(account1.getAddress()).send();
         assertEquals(inWhiteList, true);
 
+        BigInteger pre = idc.balanceOf(account1.getAddress()).send();
+
         // account1 send eth to contract address
-        System.out.println(idc.getContractAddress());
         TransactionReceipt transactionReceipt = Transfer.sendFunds(
                 web3j, account1, idc.getContractAddress(),
                 BigDecimal.valueOf(1.0), Convert.Unit.ETHER)
                 .send();
         BigInteger gasUsed = transactionReceipt.getGasUsed();
-        System.out.println(gasUsed);
+        //transactionReceipt.gettr
 
         BigInteger after = idc.balanceOf(account1.getAddress()).send();
+        System.out.println(pre);
         System.out.println(after);
         BigInteger ss = idc.balanceOf(credentials.getAddress()).send();
         System.out.println(ss);
-        assertEquals(after, new BigInteger("1").multiply(rate).multiply(decaimalAmount));
+        assertEquals(after.subtract(pre), new BigInteger("1").multiply(rate).multiply(decaimalAmount));
     }
 
     @Test

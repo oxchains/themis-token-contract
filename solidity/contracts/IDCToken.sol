@@ -501,9 +501,6 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         uint256 amount = msg.value;
         uint256 tokens =  calculateTokenAmount(amount);
 
-        tokenSelled = tokenSelled.add(tokens);
-        weiRaised = weiRaised.add(amount);
-
         // check the cap of per user in whiteList
         require(tokensBuyed[msg.sender].add(tokens) <= calculateTokenAmount(capPerAddress));
         // check there are tokens for sale;
@@ -512,6 +509,9 @@ contract IDCToken is PausableToken, MintableToken, BurnableToken {
         // record of tokens selled to buyer
         // in case to user transfer IDC tokens to others, then buy tokens again
         tokensBuyed[msg.sender] = tokensBuyed[msg.sender].add(tokens);
+
+        tokenSelled = tokenSelled.add(tokens);
+        weiRaised = weiRaised.add(amount);
 
         // send tokens to buyer
         // creator has all initSupply tokens

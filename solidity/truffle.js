@@ -17,13 +17,16 @@ module.exports = {
     development: {
       network_id: "*",
       port: 8545,
-      host: "localhost",
+      host: "192.168.1.115",
+      // special to your gas limit
+      gasLimit: 9730456,
     },
     privateNet: {
       network_id: "10",
-      port: 40404,
-      host: "localhost",
-      gasLimit: 4700000000,
+      port: 8545,
+      host: "192.168.1.115",
+      // special to your gas limit
+      gasLimit: 9730456,
     }
   }
 }

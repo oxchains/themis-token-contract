@@ -9,14 +9,15 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
-import javax.swing.plaf.synth.SynthTextAreaUI;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
 
 public class IDCTokenTest {
+
+    // special to your url(default http://localhost:8545)
+    private final String url = "http://192.168.1.115:8545";
 
     //
     String tokenName = "IDC Token";
@@ -32,11 +33,10 @@ public class IDCTokenTest {
     BigInteger capPerAddress = new BigInteger("10").multiply(decaimalAmount);
 
     BigInteger gasPrice = new BigInteger("0");
-    BigInteger gasLimit = new BigInteger("4500000");
+    BigInteger gasLimit = new BigInteger("9730456");
 
-    // TODO change to fit format of solidity now(length should be 10)
+    // change to fit format of solidity now(length should be 10)
     public BigInteger GetTime() {
-
         return BigInteger.valueOf(System.currentTimeMillis()/1000);
     }
 
@@ -73,8 +73,6 @@ public class IDCTokenTest {
     }
 
     public IDCToken before(Credentials credentials) throws Exception {
-        //String url = "http://localhost:40404";
-        String url = "http://192.168.1.115:8545";
         Web3j web3j = GetConnection(url);
         String contractAddress =  DeployContract(web3j, credentials);
         IDCToken idc = IDCToken.load(contractAddress, web3j, credentials, gasPrice, gasLimit);
@@ -82,7 +80,6 @@ public class IDCTokenTest {
     }
 
     public IDCToken load(String contractAddress, Credentials credentials) throws Exception {
-        String url = "";
         Web3j web3j = GetConnection(url);
         IDCToken idc = IDCToken.load(contractAddress, web3j, credentials, gasPrice, gasLimit);
         return idc;
@@ -182,57 +179,6 @@ public class IDCTokenTest {
     }
 
     @Test
-    public void TestNormalSellToken() throws Exception {
-
-        Web3j web3j = GetConnection("http://192.168.1.115:8545/");
-
-        Credentials credentials = GetDefaultCredentials();
-        IDCToken idc = before(credentials);
-
-
-        BigInteger timeNow = idc.timeNow().send();
-        BigInteger actualStartTime = idc.startTime().send();
-        BigInteger actualEndTime = idc.endTime().send();
-        System.out.println("now is :           " + timeNow);
-        System.out.println("ico start time is :" + actualStartTime);
-        System.out.println("ico end time is :  " + actualEndTime);
-        // increase time to start time
-        timeNow = idc.timeNow().send();
-        while (timeNow.compareTo(startTime) == -1) {
-            timeNow = idc.timeNow().send();
-        }
-
-        System.out.println("now is:" + timeNow);
-
-        Credentials account1 = GetAccount1();
-
-        // add account1 to white list
-        idc.addWhiteList(account1.getAddress()).send();
-        System.out.println(credentials.getAddress());
-        System.out.println(account1.getAddress());
-
-        boolean inWhiteList = idc.checkExist(account1.getAddress()).send();
-        assertEquals(inWhiteList, true);
-
-        BigInteger pre = idc.balanceOf(account1.getAddress()).send();
-
-        // account1 send eth to contract address
-        TransactionReceipt transactionReceipt = Transfer.sendFunds(
-                web3j, account1, idc.getContractAddress(),
-                BigDecimal.valueOf(1.0), Convert.Unit.ETHER)
-                .send();
-        BigInteger gasUsed = transactionReceipt.getGasUsed();
-        //transactionReceipt.gettr
-
-        BigInteger after = idc.balanceOf(account1.getAddress()).send();
-        System.out.println(pre);
-        System.out.println(after);
-        BigInteger ss = idc.balanceOf(credentials.getAddress()).send();
-        System.out.println(ss);
-        assertEquals(after.subtract(pre), new BigInteger("1").multiply(rate).multiply(decaimalAmount));
-    }
-
-    @Test
     public void TestNormalTransfer() throws Exception {
         Credentials credentials = GetDefaultCredentials();
         IDCToken idc = before(credentials);
@@ -241,11 +187,12 @@ public class IDCTokenTest {
 
         BigInteger pre = idc.balanceOf(account1.getAddress()).send();
 
+
         BigInteger transferIDC = new BigInteger("10").multiply(decaimalAmount);
-        idc.transfer(account1.getAddress(), transferIDC).send();
+        TransactionReceipt transactionReceipt = idc.transfer(account1.getAddress(), transferIDC).sendAsync().get();
+        transactionReceipt.getTransactionHash();
 
         BigInteger after = idc.balanceOf(account1.getAddress()).send();
-        System.out.println(after);
         assertEquals(after.subtract(pre), transferIDC);
     }
 
@@ -273,7 +220,7 @@ public class IDCTokenTest {
         Credentials account1 = GetAccount1();
         Credentials account2 = GetAccount2();
 
-        Web3j web3j = GetConnection("");
+        Web3j web3j = GetConnection(url);
 
         EthGetBalance ethGetBalance2 = web3j
                 .ethGetBalance(account2.getAddress(), DefaultBlockParameterName.LATEST)

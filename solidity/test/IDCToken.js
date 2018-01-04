@@ -43,9 +43,8 @@ const duration = {
 };
 
 function latestTime () {
-    // var timestamp = (new Date()).valueOf();
-    // return timestamp / 1000;
-    return web3.eth.getBlock('latest').timestamp;
+    var timestmap = web3.eth.getBlock('latest').timestamp;
+    return timestmap;
 }
 
 function advanceBlock () {
@@ -76,7 +75,7 @@ const totalSupply = new BigNumber(8 * 10000 * 10000).mul(decimalAmount);
 const rate = new BigNumber(7000);
 const capPerAddress = new BigNumber(10).mul(decimalAmount);
 
-startTime = latestTime() + duration.seconds(60);
+startTime = latestTime() + duration.seconds(100);
 afterStartTime = startTime + duration.seconds(10);
 endTime = startTime + duration.weeks(3);
 afterEndTime = endTime + duration.seconds(10);
@@ -89,12 +88,12 @@ contract("IDCToken ico", function(accounts) {
     });
 
     beforeEach(async function () {
-        startTime = latestTime() + duration.weeks(1);
+        startTime = latestTime() + duration.seconds(100);
         afterStartTime = startTime + duration.seconds(10);
         endTime = startTime + duration.weeks(3);
         afterEndTime = endTime + duration.seconds(10);
 
-        this.IDCTokenSale = await IDCToken.new(tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, capPerAddress, accounts[0]);
+        this.IDCTokenSale = await IDCToken.new(tokenName, tokenSymbol, decimalUints, startTime, endTime, totalSupply, rate, capPerAddress, accounts[3]);
     });
 
     it("should right initialized", async function () {
@@ -123,7 +122,7 @@ contract("IDCToken ico", function(accounts) {
         assertEquals(actualCapPerAddress, capPerAddress, "wrong cap of per address in white list");
 
         let acutalWallet = await this.IDCTokenSale.wallet();
-        assert.equal(acutalWallet, accounts[0], "wrong wallet");
+        assert.equal(acutalWallet, accounts[3], "wrong wallet");
     });
 
     it("should allow to pause by owner", async function () {
@@ -218,15 +217,14 @@ contract("IDCToken ico", function(accounts) {
         await increaseTimeTo(afterStartTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
 
+        // for private network test
         let timeNow = await this.IDCTokenSale.timeNow();
-        console.log(timeNow);
-        console.log(startTime);
-        while (timeNow <= startTime) {
+        while (timeNow < startTime) {
             timeNow = await this.IDCTokenSale.timeNow();
         }
 
         let sendEther = 1;
-        const wallet = accounts[0];
+        const wallet = accounts[3];
         let pre = web3.eth.getBalance(wallet);
 
         await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
@@ -246,6 +244,13 @@ contract("IDCToken ico", function(accounts) {
         await increaseTimeTo(afterStartTime);
 
         let sendEther = 1;
+
+        // for private network test
+        let timeNow = await this.IDCTokenSale.timeNow();
+        while (timeNow < startTime) {
+            timeNow = await this.IDCTokenSale.timeNow();
+        }
+
         try {
             await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
         } catch (error) {
@@ -260,6 +265,12 @@ contract("IDCToken ico", function(accounts) {
     it("should not allow to purchase tokens when amount of eth of tokens bigger than capPerAddress(10)", async function() {
         await increaseTimeTo(afterStartTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
+
+        // for private network test
+        let timeNow = await this.IDCTokenSale.timeNow();
+        while (timeNow < startTime) {
+            timeNow = await this.IDCTokenSale.timeNow();
+        }
 
         let sendEther = 10.1;
         try {
@@ -276,6 +287,12 @@ contract("IDCToken ico", function(accounts) {
     it("should not allow to purchase tokens when user have buy tokens greater than cap per address(in case send idc to others, then buy tokens again)", async function () {
         await increaseTimeTo(afterStartTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
+
+        // for private network test
+        let timeNow = await this.IDCTokenSale.timeNow();
+        while (timeNow < startTime) {
+            timeNow = await this.IDCTokenSale.timeNow();
+        }
 
         let sendEther = 10;
         await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
@@ -369,13 +386,15 @@ contract("IDCToken ico", function(accounts) {
         await increaseTimeTo(afterEndTime);
         await this.IDCTokenSale.addWhiteList(accounts[1]);
 
+        // for private network, it's hard to wait to end, so this may not work in private network
+
         try {
             await this.IDCTokenSale.sendTransaction({value: web3.toWei(sendEther, "ether"), from: accounts[1]});
         } catch (error) {
             return;
         }
 
-        // for private network
+        // for private network (may not work)
         let tokensOfMint = await this.IDCTokenSale.balanceOf(accounts[1]).valueOf();
         assertEquals(tokensOfMint, new BigNumber(0), "user can not buy more tokens when tokens of user has buyed equal with cap limit");
     });

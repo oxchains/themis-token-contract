@@ -19,14 +19,15 @@ truffle deploy
 ## Test on private network
 <pre><code>
 # use geth to start private network
-
-
-# unlock accounts
-
-
-# start test
-
-
+geth --datadir yourdatadir --rpc --networkid yournetworkid console
+ 
+# unlock personal account(make sure you have set account in you private network and have enough eth)
+personal.unlockAccount(eth.accounts[0], yourpassword, 15000)
+personal.unlockAccount(eth.accounts[0], yourpassword, 15000)
+ 
+# start test(special to your address and gas limit)
+# set them in truffle.js
+truffle test
 </code></pre>
 
 ## How to get tokens

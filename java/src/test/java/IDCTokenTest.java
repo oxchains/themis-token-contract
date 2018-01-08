@@ -1,16 +1,27 @@
 import org.junit.Test;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.WalletUtils;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.admin.Admin;
+import org.web3j.protocol.admin.methods.response.PersonalUnlockAccount;
 import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.response.EthGetBalance;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.*;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.tx.RawTransactionManager;
+import org.web3j.tx.TransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -190,7 +201,9 @@ public class IDCTokenTest {
 
         BigInteger transferIDC = new BigInteger("10").multiply(decaimalAmount);
         TransactionReceipt transactionReceipt = idc.transfer(account1.getAddress(), transferIDC).sendAsync().get();
-        transactionReceipt.getTransactionHash();
+        String transId = transactionReceipt.getTransactionHash();
+
+        //IDCToken.getTransferEvents(transactionReceipt);
 
         BigInteger after = idc.balanceOf(account1.getAddress()).send();
         assertEquals(after.subtract(pre), transferIDC);
@@ -212,6 +225,19 @@ public class IDCTokenTest {
 
         assertEquals(pre.subtract(after), burnAmount);
         assertEquals(preTotal.subtract(afterTotal), burnAmount);
+    }
+
+    @Test
+    public void TestWhiteList() throws Exception {
+        Credentials credentials = GetDefaultCredentials();
+        IDCToken idc = before(credentials);
+
+        Credentials acc = GetAccount1();
+
+        idc.addWhiteList(acc.getAddress()).send();
+
+
+
     }
 
     @Test
@@ -244,5 +270,59 @@ public class IDCTokenTest {
 
         // check account2 get right amount eth
         assertEquals(transerAmount, afterAccount2.subtract(preAccount2));
+    }
+
+    @Test
+    public void TestGasPrice() throws Exception {
+        String url = "http://192.168.1.102:8545";
+        Web3j web3j = GetConnection(url);
+        EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+        BigInteger gasPrice = ethGasPrice.getGasPrice();
+        System.out.println(gasPrice);
+    }
+
+    @Test
+    public void TestGetReciption() throws Exception {
+
+        String url = "http://192.168.1.102:8545";
+
+        String contractAddress = "0xdbe16aa3c77ff1bc391f2b311152b86610de1494";
+
+        BigInteger gWei = new BigInteger("1000000000");
+        BigInteger gasPrice = new BigInteger("30").multiply(gWei);
+        BigInteger gasLimit = new BigInteger("100000");
+
+        String from = "0xde342d474ee94d1212a6498fac134cb28623c324";
+        String _to = "0xdbe16aa3c77ff1bc391f2b311152b86610de1494";
+        BigInteger _value = new BigInteger("7000").multiply(decaimalAmount);
+        String password = "liuruichao123";
+
+        Admin web3jJ = Admin.build(new HttpService(url));
+        PersonalUnlockAccount personalUnlockAccount = web3jJ.personalUnlockAccount(from, password).send();
+        if (personalUnlockAccount.accountUnlocked()) {
+            // send a transaction
+            System.out.println("personal account unlock");
+        }
+
+        EthGetTransactionCount ethGetTransactionCount = web3jJ.ethGetTransactionCount(from, DefaultBlockParameterName.LATEST).sendAsync().get();
+
+        BigInteger nonce = ethGetTransactionCount.getTransactionCount();
+
+        System.out.println("none is :" + nonce);
+
+        Function function = new Function(
+                "transfer",
+                Arrays.<Type>asList(new org.web3j.abi.datatypes.Address(_to),
+                        new org.web3j.abi.datatypes.generated.Uint256(_value)),
+                Collections.<TypeReference<?>>emptyList());
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        Transaction transaction = Transaction.createFunctionCallTransaction(
+                from, nonce, gasPrice, gasLimit, contractAddress, new BigInteger("0"), encodedFunction);
+        EthSendTransaction ethSendTransaction = web3jJ.ethSendTransaction(transaction).send();
+        System.out.println(ethSendTransaction);
+        String hash = ethSendTransaction.getTransactionHash();
+
+        System.out.println(hash);
     }
 }

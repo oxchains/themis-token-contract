@@ -16,6 +16,7 @@ import org.web3j.tx.RawTransactionManager;
 import org.web3j.tx.TransactionManager;
 import org.web3j.tx.Transfer;
 import org.web3j.utils.Convert;
+import org.web3j.utils.Numeric;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -317,6 +318,9 @@ public class IDCTokenTest {
                 Collections.<TypeReference<?>>emptyList());
         String encodedFunction = FunctionEncoder.encode(function);
 
+        Double a = 1.1;
+        new BigInteger(a.toString());
+
         Transaction transaction = Transaction.createFunctionCallTransaction(
                 from, nonce, gasPrice, gasLimit, contractAddress, new BigInteger("0"), encodedFunction);
         EthSendTransaction ethSendTransaction = web3jJ.ethSendTransaction(transaction).send();
@@ -324,5 +328,24 @@ public class IDCTokenTest {
         String hash = ethSendTransaction.getTransactionHash();
 
         System.out.println(hash);
+    }
+
+    public BigInteger changeToBigInteger(BigDecimal value) {
+
+        //BigInteger
+        BigDecimal weiValue = Convert.toWei(value, Convert.Unit.ETHER);
+        if (!Numeric.isIntegerValue(weiValue)) {
+            throw new UnsupportedOperationException("Non decimal Wei value provided: " + value + " " + Convert.Unit.ETHER.toString() + " = " + weiValue + " Wei");
+        } else {
+            return weiValue.toBigIntegerExact().multiply(new BigInteger("7000"));
+        }
+    }
+
+    @Test
+    public void TestDecimal() {
+        BigDecimal value = new BigDecimal("1.2");
+
+        BigInteger res = changeToBigInteger(value);
+        System.out.println(res);
     }
 }
